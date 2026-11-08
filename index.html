@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Time Saver</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Time Saver">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#16191c">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-192.png">
+<link rel="manifest" href="manifest.webmanifest">
+<style>
+:root{
+  --bg:#121417; --surface:#1b1f23; --fg:#eef0f2; --muted:#9aa3ad; --line:#2b3137;
+  --accent:#f2843f; --track:#262b30;
+  --ui:-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --mono:ui-monospace, "SF Mono", Menlo, monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--ui)}
+body{
+  padding-top:max(20px, env(safe-area-inset-top));
+  padding-bottom:max(24px, env(safe-area-inset-bottom));
+  padding-left:max(16px, env(safe-area-inset-left));
+  padding-right:max(16px, env(safe-area-inset-right));
+  -webkit-user-select:none;user-select:none;
+}
+.wrap{max-width:520px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
+h1{font-size:1.6rem;font-weight:800;margin:4px 0 0;letter-spacing:-.01em}
+.label{font-size:.72rem;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);font-weight:700;margin-bottom:8px;display:block}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px}
+.tc{display:flex;align-items:center;gap:6px}
+.tc input{width:100%;min-width:0;font-family:var(--mono);font-size:2rem;font-weight:600;text-align:center;
+  background:var(--track);color:var(--fg);border:2px solid transparent;border-radius:10px;padding:10px 4px;-webkit-user-select:text;user-select:text}
+.tc input:focus{outline:none;border-color:var(--accent)}
+.tc span{font-family:var(--mono);font-size:1.6rem;color:var(--muted)}
+.units{display:grid;grid-template-columns:1fr 14px 1fr 14px 1fr;margin-top:6px;font-size:.72rem;color:var(--muted);text-align:center}
+.speeds{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.speeds button{font-family:var(--mono);font-size:1.05rem;font-weight:600;padding:14px 0;border-radius:10px;
+  border:1px solid var(--line);background:var(--surface);color:var(--fg)}
+.speeds button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#16191c}
+.custom{display:flex;align-items:center;gap:12px;margin-top:14px;color:var(--muted);font-size:.9rem}
+.custom input{flex:1;accent-color:var(--accent)}
+.custom output{font-family:var(--mono);font-weight:600;color:var(--fg);min-width:4.5ch;text-align:right}
+.result{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.big{font-family:var(--mono);font-size:1.8rem;font-weight:600;line-height:1.1}
+.big.save{color:var(--accent)}
+.small{color:var(--muted);font-size:.85rem;margin-top:4px}
+.bars{display:flex;flex-direction:column;gap:10px;margin-top:18px}
+.barrow{display:grid;grid-template-columns:52px 1fr;align-items:center;gap:10px;font-family:var(--mono);font-size:.8rem;color:var(--muted)}
+.bar{height:12px;background:var(--track);border-radius:6px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--fg);border-radius:6px;transition:width .35s ease}
+.bar.fast i{background:var(--accent)}
+table{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:.95rem;font-variant-numeric:tabular-nums}
+th{font-family:var(--ui);text-align:right;font-size:.7rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);padding:6px 4px;border-bottom:1px solid var(--line)}
+th:first-child,td:first-child{text-align:left}
+td{text-align:right;padding:9px 4px;border-bottom:1px solid var(--line)}
+tr.on td{color:var(--accent);font-weight:700}
+@media (prefers-reduced-motion: reduce){.bar i{transition:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Time Saver</h1>
+
+  <section class="panel">
+    <span class="label">Video length</span>
+    <div class="tc">
+      <input id="h" inputmode="numeric" pattern="[0-9]*" maxlength="3" value="1" aria-label="Hours">
+      <span>:</span>
+      <input id="m" inputmode="numeric" pattern="[0-9]*" maxlength="2" value="24" aria-label="Minutes">
+      <span>:</span>
+      <input id="s" inputmode="numeric" pattern="[0-9]*" maxlength="2" value="30" aria-label="Seconds">
+    </div>
+    <div class="units"><div>hours</div><div></div><div>min</div><div></div><div>sec</div></div>
+  </section>
+
+  <section>
+    <span class="label">Playback speed</span>
+    <div class="speeds" id="speeds">
+      <button type="button" data-v="1.25">1.25×</button>
+      <button type="button" data-v="1.5">1.5×</button>
+      <button type="button" data-v="1.75">1.75×</button>
+      <button type="button" data-v="2">2×</button>
+    </div>
+    <div class="custom">
+      <label for="r">Custom</label>
+      <input type="range" id="r" min="1" max="4" step="0.05" value="1.5">
+      <output id="ro">1.50×</output>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="result">
+      <div><span class="label">You'll watch for</span><div class="big" id="newT">–</div></div>
+      <div><span class="label">Time saved</span><div class="big save" id="saved">–</div><div class="small" id="pct"></div></div>
+    </div>
+    <div class="bars">
+      <div class="barrow"><span>1×</span><div class="bar"><i style="width:100%"></i></div></div>
+      <div class="barrow"><span id="bl">1.5×</span><div class="bar fast"><i id="fb"></i></div></div>
+    </div>
+  </section>
+
+  <section>
+    <span class="label">Every speed</span>
+    <table>
+      <thead><tr><th>Speed</th><th>Runtime</th><th>Saved</th><th>%</th></tr></thead>
+      <tbody id="tb"></tbody>
+    </table>
+  </section>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+const store={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}}};
+let speed=parseFloat(store.get('speed'))||1.5;
+['h','m','s'].forEach(id=>{const v=store.get(id);if(v!==null)$(id).value=v});
+$('r').value=speed;
+
+const fmt=sec=>{sec=Math.round(sec);const h=Math.floor(sec/3600),m=Math.floor(sec%3600/60),s=sec%60;
+  return h?`${h}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`:`${m}:${String(s).padStart(2,'0')}`};
+const total=()=>{const n=id=>Math.max(0,parseInt($(id).value,10)||0);return n('h')*3600+n('m')*60+n('s')};
+
+function render(){
+  const t=total(), nt=t/speed, sv=t-nt;
+  $('newT').textContent=fmt(nt); $('saved').textContent=fmt(sv);
+  $('pct').textContent=t?`${Math.round(sv/t*100)}% shorter`:'';
+  $('bl').textContent=(+speed.toFixed(2))+'×'; $('fb').style.width=(100/speed)+'%';
+  $('ro').textContent=speed.toFixed(2)+'×';
+  document.querySelectorAll('#speeds button').forEach(b=>b.setAttribute('aria-pressed',Math.abs(+b.dataset.v-speed)<1e-9));
+  $('tb').innerHTML=[1.25,1.5,1.75,2,2.5,3].map(v=>{const n=t/v;
+    return `<tr class="${Math.abs(v-speed)<1e-9?'on':''}"><td>${v}×</td><td>${fmt(n)}</td><td>${fmt(t-n)}</td><td>${Math.round((1-1/v)*100)}%</td></tr>`}).join('');
+  store.set('speed',speed);['h','m','s'].forEach(id=>store.set(id,$(id).value));
+}
+document.querySelectorAll('#speeds button').forEach(b=>b.onclick=()=>{speed=+b.dataset.v;$('r').value=speed;render()});
+$('r').oninput=e=>{speed=+e.target.value;render()};
+['h','m','s'].forEach(id=>{
+  $(id).addEventListener('input',e=>{e.target.value=e.target.value.replace(/\D/g,'');render()});
+  $(id).addEventListener('focus',e=>e.target.select());
+});
+render();
+
+if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(()=>{})}
+</script>
+</body>
+</html>
